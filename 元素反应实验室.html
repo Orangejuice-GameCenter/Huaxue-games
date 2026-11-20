@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>元素反应实验室</title>
+<style>
+:root{--bg:#e9efe9;--panel:#f6f9f6;--ink:#1b2a38;--sub:#566873;--line:#c3d1ca;--acc:#1f6fd1;--hot:#d9651f;--stage:#dce6e0;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101c26;--panel:#182a37;--ink:#e4eef0;--sub:#92a8b2;--line:#2c4352;--acc:#5aa2f5;--hot:#f08a45;--stage:#15303f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101c26;--panel:#182a37;--ink:#e4eef0;--sub:#92a8b2;--line:#2c4352;--acc:#5aa2f5;--hot:#f08a45;--stage:#15303f;color-scheme:dark}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;height:100%;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;-webkit-user-select:none;user-select:none}
+header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;gap:8px}
+h1{font:700 20px/1.2 "Songti SC","Noto Serif SC",Georgia,serif;margin:0}
+#prog{font-size:12px;color:var(--sub)}
+header button{font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+#stage{position:relative;flex:1;min-height:0;margin:0 8px;border-radius:16px;overflow:hidden;background:var(--stage) radial-gradient(var(--line) 1px,transparent 1.5px) 0 0/22px 22px;touch-action:none}
+#stage.shake{animation:sh .45s}
+@keyframes sh{0%,100%{transform:none}20%{transform:translate(-5px,3px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(3px,3px)}}
+#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:20}
+#banner{position:absolute;left:8px;right:8px;top:8px;z-index:30;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:13px;opacity:0;transition:opacity .3s}
+#banner.on{opacity:1}
+#banner .eq{font:600 15px/1.4 Cambria,"Songti SC",Georgia,serif}
+#banner em{font-style:normal;color:var(--hot)}
+#hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--sub);font-size:14px;pointer-events:none}
+.tok{position:absolute;width:60px;height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--panel);color:var(--ink);overflow:hidden;font-family:Cambria,"Songti SC",Georgia,serif;line-height:1.1;text-align:center;touch-action:none;cursor:grab;z-index:5;box-shadow:0 2px 0 rgba(0,0,0,.2)}
+.tok span{font-size:12px;font-weight:600;white-space:nowrap;pointer-events:none}.ic{width:28px;height:28px;flex:none;pointer-events:none}.mini .ic{width:36px;height:36px}
+.tok small{font:400 9px system-ui,sans-serif;opacity:.85;white-space:nowrap;pointer-events:none}
+.st-s{border-radius:9px;border:3px solid var(--ink)}
+.st-l{border-radius:14px 14px 24px 24px;border:2.5px solid var(--acc)}
+.st-g{border-radius:24px;border:2.5px dashed var(--sub);opacity:.9}.st-c{border-radius:18px;border:2.5px solid var(--hot)}
+.tok.drag{z-index:15;transform:scale(1.12);box-shadow:0 8px 14px rgba(0,0,0,.3)}
+.tok.hit{outline:4px solid var(--hot);outline-offset:2px}
+.tok.nope{animation:sh .35s}
+#shelf{background:var(--panel);border-top:1px solid var(--line);margin-top:8px;padding:6px 0 8px;transition:background .2s}
+#shelf.del{background:#e8742c40}
+#q{display:block;width:calc(100% - 20px);margin:0 10px 6px;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:6px 10px;-webkit-user-select:text;user-select:text}#q:focus-visible{outline:3px solid var(--acc);outline-offset:1px}.none{grid-row:1/3;color:var(--sub);font-size:13px;padding:8px;white-space:nowrap}
+#tabs{display:flex;gap:6px;padding:0 10px}
+#tabs button{flex:1;font:inherit;font-size:13px;font-weight:600;color:var(--sub);background:transparent;border:1.5px solid var(--line);border-radius:8px;padding:6px 0;cursor:pointer}
+#tabs button.on{color:var(--ink);border-color:var(--ink)}
+#row{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,72px);gap:6px;overflow-x:auto;padding:8px 12px 2px;-webkit-overflow-scrolling:touch}
+.mini{position:relative;flex:none;width:62px;height:72px;touch-action:pan-x}
+#tip{font-size:11px;color:var(--sub);padding:2px 12px 0}
+#dexp{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);display:flex;align-items:flex-end}
+#dexp[hidden]{display:none}
+#dexp div.box{background:var(--panel);width:100%;max-height:75%;overflow:auto;border-radius:16px 16px 0 0;padding:14px;user-select:text}
+#dexp h2{font:600 16px "Songti SC",Georgia,serif;margin:0 0 8px}
+#dexp p{margin:0 0 6px;font:14px/1.5 Cambria,"Songti SC",Georgia,serif;border-left:3px solid var(--acc);padding-left:8px}
+#dexp button{margin-top:8px;font:inherit;width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--ink);background:transparent;color:var(--ink)}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+</style>
+</head>
+<body>
+<header><div><h1>元素反应实验室</h1><div id="prog"></div></div><div><button id="dex">图鉴</button> <button id="clr">清空</button></div></header>
+<div id="stage"><canvas id="fx"></canvas><div id="banner"></div><div id="hint">从下面把物质拖进来，<br>让两个物质碰在一起，看看会发生什么。</div></div>
+<footer id="shelf"><input id="q" type="search" placeholder="搜索药品：名称或化学式，如 硫酸、CuSO4" autocomplete="off" aria-label="搜索药品"><div id="tabs"></div><div id="row"></div><div id="tip">点一下放入，或向上拖进实验区。拖回这里可以丢掉。需要条件的反应，把“条件”里的酒精灯等拖到物质上。</div></footer>
+<div id="dexp" hidden><div class="box"><h2 id="dh"></h2><div id="dl"></div><button id="dc">关闭</button></div></div>
+<script>
+const $=s=>document.querySelector(s);
+// 物质：化学式 名称 状态(s固体 l液体 g气体) 颜色
+const SP={};
+`O2 氧气 g #8fd0ff
+H2 氢气 g #c7e3ff
+CO2 二氧化碳 g #aab6bf
+CO 一氧化碳 g #9aa3b8
+N2 氮气 g #a5c4ff
+Cl2 氯气 g #bfe05a
+NH3 氨气 g #d6ccff
+SO2 二氧化硫 g #e6cf70
+CH4 甲烷 g #a9dcb8
+H2S 硫化氢 g #cfc84e
+NO2 二氧化氮 g #d2793a
+He 氦气 g #ffd5e6
+H2O 水 l #7db8e8
+HCl 盐酸 l #bcdce8
+H2SO4 硫酸 l #e6dc8a
+HNO3 硝酸 l #f0e2a8
+NaOH 氢氧化钠 l #c9d3ff
+KOH 氢氧化钾 l #cdd0ff
+Ca(OH)2 石灰水 l #cfe6da
+Ba(OH)2 氢氧化钡 l #d4e4dc
+NH3.H2O 氨水 l #dcd4f8
+Na2CO3 碳酸钠 l #d8d8ee
+NaCl 食盐水 l #d0d6dc
+KCl 氯化钾 l #d8dce0
+AgNO3 硝酸银 l #d6d6e4
+CuSO4 硫酸铜 l #2f7fe0
+CuCl2 氯化铜 l #2fa3a0
+FeCl3 氯化铁 l #d9902a
+FeSO4 硫酸亚铁 l #8cc47e
+FeCl2 氯化亚铁 l #9ccf8e
+BaCl2 氯化钡 l #d9d9c4
+CaCl2 氯化钙 l #dde0d0
+MgSO4 硫酸镁 l #dfe6e6
+MgCl2 氯化镁 l #e2e6e2
+ZnSO4 硫酸锌 l #e0e6e6
+ZnCl2 氯化锌 l #e0e4e8
+Na2SO4 硫酸钠 l #e4e6ea
+NaNO3 硝酸钠 l #e6e6ea
+KNO3 硝酸钾 l #e8e6e6
+Pb(NO3)2 硝酸铅 l #e4e0e8
+KI 碘化钾 l #e8e4d8
+H2O2 双氧水 l #d8f0f4
+C2H5OH 酒精 l #e8dcc8
+AlCl3 氯化铝 l #e4e8ec
+Al2(SO4)3 硫酸铝 l #e6e9ee
+Cu(NO3)2 硝酸铜 l #3a90d8
+Zn(NO3)2 硝酸锌 l #e2e6ea
+Ba(NO3)2 硝酸钡 l #e4e6e0
+MnCl2 氯化锰 l #f0c8d0
+PP 酚酞 l #e8f0f0
+PPr 变红的酚酞 l #ff5fa8
+Fe 铁 s #6b7078
+Zn 锌 s #8f98a3
+Cu 铜 s #b8602f
+Mg 镁 s #d9dde0
+Al 铝 s #c3c8cc
+Na 钠 s #c4c8d0
+K 钾 s #d0cfe0
+Ca 钙 s #d6d2c4
+Ag 银 s #c9ced4
+C 碳 s #2b2b30
+S 硫 s #e8d22a
+P 红磷 s #b4262e
+I2 碘 s #5a3a78
+CaCO3 碳酸钙 s #efefe8
+CaO 生石灰 s #f1ede0
+CuO 氧化铜 s #2a2a2a
+Fe2O3 氧化铁 s #a23a22
+MnO2 二氧化锰 s #3a3030
+MgO 氧化镁 s #f0f0f0
+NaHCO3 小苏打 s #f3f3f3
+KMnO4 高锰酸钾 s #6b1d6b
+KClO3 氯酸钾 s #f0f0f0
+AgCl 氯化银 s #f2f2f2
+BaSO4 硫酸钡 s #ececec
+BaCO3 碳酸钡 s #e4e4e4
+CuCO3 碳酸铜 s #4fb5a0
+Cu(OH)2 氢氧化铜 s #3a8fe8
+Fe(OH)3 氢氧化铁 s #a8532a
+Mg(OH)2 氢氧化镁 s #f4f4f4
+Al(OH)3 氢氧化铝 s #efefef
+PbI2 碘化铅 s #f0d020
+CaSO4 硫酸钙 s #e8e8e0
+Ag2O 氧化银 s #6b4a32
+NH4Cl 氯化铵 s #f0f0f0
+P2O5 五氧化二磷 s #f6f6f6
+Fe3O4 四氧化三铁 s #3a3a3e
+Ar 氩气 g #d8c8ff
+Ne 氖气 g #ff9f7a
+NO 一氧化氮 g #c9a79a
+C2H2 乙炔 g #e8e0b0
+C2H4 乙烯 g #c8e8b8
+C3H8 丙烷 g #e8c8a8
+Hg 汞 l #b8c0c8
+Br2 溴 l #a8401e
+KBr 溴化钾 l #e6e2d6
+CH3COOH 醋酸 l #f0e8c0
+H3PO4 磷酸 l #e8ecd0
+Na2S 硫化钠 l #e6e0b0
+KSCN 硫氰化钾 l #e8e6e0
+Fe(SCN)3 硫氰化铁 l #c0201e
+Na2SiO3 水玻璃 l #e4e8ee
+C6H12O6 葡萄糖 l #f0e6d0
+St 淀粉 l #f0eee0
+StI 淀粉碘 l #2a2a6a
+NaClO 漂白水 l #e6f0cc
+K2CrO4 铬酸钾 l #e6d020
+K2Cr2O7 重铬酸钾 l #e8781c
+Ca(NO3)2 硝酸钙 l #e8ece4
+Fe2(SO4)3 硫酸铁 l #d2a23c
+K2SO4 硫酸钾 l #e6e8ea
+Lit 石蕊 l #8a5fd0
+LitR 变红的石蕊 l #e0405a
+LitB 变蓝的石蕊 l #3a5fd0
+LiOH 氢氧化锂 l #cdd0ff
+NiCl2 氯化镍 l #7fc87a
+SnCl2 氯化亚锡 l #e8e8e4
+CH3COONa 醋酸钠 l #e8e8e0
+C2H4Br2 二溴乙烷 l #e8d8c0
+Li 锂 s #c8c8d0
+Si 硅 s #5a5f6e
+Cr 铬 s #a8b8c8
+Ni 镍 s #b8bcb4
+Sn 锡 s #c8ccd0
+Pb 铅 s #6a707a
+Au 金 s #e8b820
+Ba 钡 s #d8d8c0
+Ti 钛 s #9aa0aa
+Mn 锰 s #9a8aa0
+ZnO 氧化锌 s #f2f0e4
+Al2O3 氧化铝 s #f4f0ec
+SiO2 二氧化硅 s #e8e0c8
+Na2O2 过氧化钠 s #f0e8a8
+(NH4)2SO4 硫酸铵 s #f0f0f0
+NH4NO3 硝酸铵 s #f2f2f2
+FeS 硫化亚铁 s #3a3028
+ZnS 硫化锌 s #eeeeee
+CuS 硫化铜 s #1a2030
+PbS 硫化铅 s #2a2a30
+PbSO4 硫酸铅 s #f0f0f0
+PbCl2 氯化铅 s #f4f4f4
+PbCrO4 铬酸铅 s #f0c820
+AgBr 溴化银 s #e8e4a8
+AgI 碘化银 s #f0e070
+Ag2S 硫化银 s #2a2a2a
+Zn(OH)2 氢氧化锌 s #f0f2f2
+CaC2 电石 s #8a8a8e
+CuSO4.5H2O 胆矾 s #3a7fd8
+Cu2O 氧化亚铜 s #b8321e
+Cu2(OH)2CO3 铜绿 s #3a9a7a
+Ca3(PO4)2 磷酸钙 s #f0efe8
+Cr2O3 氧化铬 s #3a7a3a
+TiO2 二氧化钛 s #fafafa
+HgS 辰砂 s #c8201e
+K2MnO4 锰酸钾 s #2a5a2a
+CH3Cl 一氯甲烷 g #cfe0c8
+加热 酒精灯 c #f08a45
+高温 喷灯 c #4a90e8
+点燃 火柴 c #c8201e
+通电 电池 c #f6c23a
+光照 阳光 c #f6c23a`.split('\n').forEach(l=>{const[id,cn,st,col]=l.split(' ');SP[id]={id,cn,st,col}});
+const RULES=`2HCl+Na2CO3>2NaCl+H2O+CO2
+H2SO4+Na2CO3>Na2SO4+H2O+CO2
+2HNO3+Na2CO3>2NaNO3+H2O+CO2
+2HCl+CaCO3>CaCl2+H2O+CO2
+2HCl+BaCO3>BaCl2+H2O+CO2
+2HCl+CuCO3>CuCl2+H2O+CO2
+HCl+NaHCO3>NaCl+H2O+CO2
+HCl+NaOH>NaCl+H2O|h
+HCl+KOH>KCl+H2O|h
+2HCl+Ca(OH)2>CaCl2+2H2O|h
+H2SO4+2NaOH>Na2SO4+2H2O|h
+H2SO4+Ca(OH)2>CaSO4+2H2O|h
+H2SO4+Ba(OH)2>BaSO4+2H2O|h
+HNO3+NaOH>NaNO3+H2O|h
+HCl+NH3.H2O>NH4Cl+H2O|h
+HCl+NH3>NH4Cl
+2HCl+Mg(OH)2>MgCl2+2H2O
+2HCl+Cu(OH)2>CuCl2+2H2O
+3HCl+Fe(OH)3>FeCl3+3H2O
+3HCl+Al(OH)3>AlCl3+3H2O
+H2SO4+Cu(OH)2>CuSO4+2H2O
+2HCl+CuO>CuCl2+H2O|h
+H2SO4+CuO>CuSO4+H2O|h
+6HCl+Fe2O3>2FeCl3+3H2O
+2HCl+MgO>MgCl2+H2O|h
+2HCl+CaO>CaCl2+H2O|h
+H2O+CaO>Ca(OH)2|h
+Zn+2HCl>ZnCl2+H2
+Zn+H2SO4>ZnSO4+H2
+Fe+2HCl>FeCl2+H2
+Fe+H2SO4>FeSO4+H2
+Mg+2HCl>MgCl2+H2|h
+Mg+H2SO4>MgSO4+H2|h
+2Al+6HCl>2AlCl3+3H2|h
+Ca+2H2O>Ca(OH)2+H2|h
+2Na+2H2O>2NaOH+H2|hf
+2K+2H2O>2KOH+H2|hf
+2H2+O2>2H2O|hf
+H2+Cl2>2HCl|hf
+N2+3H2>2NH3|h
+2Na+Cl2>2NaCl|hf
+2Fe+3Cl2>2FeCl3|h
+Cu+Cl2>CuCl2|h
+Cl2+2KI>2KCl+I2
+Cl2+2FeCl2>2FeCl3
+H2S+Cl2>2HCl+S
+2H2S+SO2>3S+2H2O
+2H2S+3O2>2SO2+2H2O|hf
+Fe+CuSO4>FeSO4+Cu
+Zn+CuSO4>ZnSO4+Cu
+Zn+FeSO4>ZnSO4+Fe
+Mg+CuSO4>MgSO4+Cu|h
+2Al+3CuSO4>Al2(SO4)3+3Cu
+Zn+2AgNO3>Zn(NO3)2+2Ag
+Cu+2AgNO3>Cu(NO3)2+2Ag
+Fe+2FeCl3>3FeCl2
+Cu+4HNO3>Cu(NO3)2+2NO2+2H2O
+2NaOH+CuSO4>Cu(OH)2+Na2SO4
+2NaOH+CuCl2>Cu(OH)2+2NaCl
+3NaOH+FeCl3>Fe(OH)3+3NaCl
+2NaOH+MgSO4>Mg(OH)2+Na2SO4
+2NaOH+MgCl2>Mg(OH)2+2NaCl
+3NaOH+AlCl3>Al(OH)3+3NaCl
+2AgNO3+2NaOH>Ag2O+2NaNO3+H2O
+AgNO3+HCl>AgCl+HNO3
+AgNO3+NaCl>AgCl+NaNO3
+AgNO3+KCl>AgCl+KNO3
+2AgNO3+BaCl2>2AgCl+Ba(NO3)2
+2AgNO3+CuCl2>2AgCl+Cu(NO3)2
+BaCl2+H2SO4>BaSO4+2HCl
+BaCl2+Na2SO4>BaSO4+2NaCl
+BaCl2+MgSO4>BaSO4+MgCl2
+BaCl2+CuSO4>BaSO4+CuCl2
+BaCl2+Na2CO3>BaCO3+2NaCl
+Ba(OH)2+CuSO4>BaSO4+Cu(OH)2
+Ba(OH)2+Na2SO4>BaSO4+2NaOH
+Ba(OH)2+Na2CO3>BaCO3+2NaOH
+Ca(OH)2+Na2CO3>CaCO3+2NaOH
+CaCl2+Na2CO3>CaCO3+2NaCl
+Ca(OH)2+CO2>CaCO3+H2O
+Na2CO3+CuSO4>CuCO3+Na2SO4
+Pb(NO3)2+2KI>PbI2+2KNO3
+FeCl3+3NH3.H2O>Fe(OH)3+3NH4Cl
+AlCl3+3NH3.H2O>Al(OH)3+3NH4Cl
+NH3+H2O>NH3.H2O
+NH4Cl+NaOH>NaCl+NH3+H2O|h
+2NH4Cl+Ca(OH)2>CaCl2+2NH3+2H2O|h
+CO2+2NaOH>Na2CO3+H2O
+CaO+CO2>CaCO3|h
+C+O2>CO2|hf
+C+CO2>2CO|h
+2CO+O2>2CO2|hf
+CH4+2O2>CO2+2H2O|hf
+S+O2>SO2|hf
+4P+5O2>2P2O5|hf
+2Mg+O2>2MgO|hf
+2Mg+CO2>2MgO+C|hf
+3Fe+2O2>Fe3O4|hf
+2Cu+O2>2CuO|h
+2Ca+O2>2CaO|h
+C2H5OH+3O2>2CO2+3H2O|hf
+C+2CuO>2Cu+CO2|h
+H2+CuO>Cu+H2O|h
+CO+CuO>Cu+CO2|h
+3CO+Fe2O3>2Fe+3CO2|h
+2H2O2+MnO2>2H2O+O2+MnO2
+2KClO3+MnO2>2KCl+3O2+MnO2|h
+2KMnO4+16HCl>2KCl+2MnCl2+5Cl2+8H2O
+2FeCl3+2KI>2FeCl2+2KCl+I2
+PP+NaOH>PPr
+PP+KOH>PPr
+PP+Ca(OH)2>PPr
+PP+Ba(OH)2>PPr
+PP+NH3.H2O>PPr
+PPr+HCl>PP|h
+PPr+H2SO4>PP|h
+PPr+HNO3>PP|h
+2Li+2H2O>2LiOH+H2|hf
+Ba+2H2O>Ba(OH)2+H2|hf
+Si+O2>SiO2|h
+Na2SiO3+2HCl>2NaCl+SiO2+H2O
+SiO2+2NaOH>Na2SiO3+H2O|h
+4Cr+3O2>2Cr2O3|h
+Ni+2HCl>NiCl2+H2
+Sn+2HCl>SnCl2+H2
+Mn+2HCl>MnCl2+H2
+Ti+O2>TiO2|hf
+Pb+2AgNO3>Pb(NO3)2+2Ag
+Pb(NO3)2+Na2SO4>PbSO4+2NaNO3
+Pb(NO3)2+2NaCl>PbCl2+2NaNO3
+Pb(NO3)2+Na2S>PbS+2NaNO3
+Pb(NO3)2+K2CrO4>PbCrO4+2KNO3
+2K2CrO4+H2SO4>K2Cr2O7+K2SO4+H2O
+K2Cr2O7+2KOH>2K2CrO4+H2O
+Hg+S>HgS
+Fe+S>FeS|h
+Cl2+2KBr>2KCl+Br2
+Br2+2KI>2KBr+I2
+C2H4+Br2>C2H4Br2
+AgNO3+KBr>AgBr+KNO3
+AgNO3+KI>AgI+KNO3
+2AgNO3+Na2S>Ag2S+2NaNO3
+Na2S+2HCl>2NaCl+H2S
+Na2S+CuSO4>CuS+Na2SO4
+Na2S+ZnSO4>ZnS+Na2SO4
+FeS+2HCl>FeCl2+H2S
+ZnS+2HCl>ZnCl2+H2S
+CH3COOH+NaHCO3>CH3COONa+H2O+CO2
+CH3COOH+NaOH>CH3COONa+H2O|h
+3Ca(OH)2+2H3PO4>Ca3(PO4)2+6H2O|h
+FeCl3+3KSCN>Fe(SCN)3+3KCl
+C6H12O6+6O2>6CO2+6H2O|h
+I2+St>StI
+NaClO+2HCl>NaCl+Cl2+H2O
+Ca(NO3)2+Na2CO3>CaCO3+2NaNO3
+Fe2(SO4)3+6NaOH>2Fe(OH)3+3Na2SO4
+Fe+Fe2(SO4)3>3FeSO4
+2KOH+CuSO4>Cu(OH)2+K2SO4
+Lit+HCl>LitR
+Lit+H2SO4>LitR
+Lit+HNO3>LitR
+Lit+CH3COOH>LitR
+Lit+NaOH>LitB
+Lit+KOH>LitB
+Lit+NH3.H2O>LitB
+PP+LiOH>PPr
+2Zn+O2>2ZnO|h
+ZnO+2HCl>ZnCl2+H2O
+ZnSO4+2NaOH>Zn(OH)2+Na2SO4
+Zn(OH)2+2HCl>ZnCl2+2H2O
+4Al+3O2>2Al2O3|hf
+Al2O3+6HCl>2AlCl3+3H2O
+2Na2O2+2CO2>2Na2CO3+O2
+2Na2O2+2H2O>4NaOH+O2|h
+(NH4)2SO4+2NaOH>Na2SO4+2NH3+2H2O
+NH4NO3+NaOH>NaNO3+NH3+H2O
+CaC2+2H2O>Ca(OH)2+C2H2|h
+2C2H2+5O2>4CO2+2H2O|hf
+C2H4+3O2>2CO2+2H2O|hf
+C3H8+5O2>3CO2+4H2O|hf
+CuSO4.5H2O+H2O>CuSO4
+CuO+Cu>Cu2O|h
+Cu2O+H2SO4>CuSO4+Cu+H2O
+CuCO3+Cu(OH)2>Cu2(OH)2CO3
+Cu2(OH)2CO3+4HCl>2CuCl2+3H2O+CO2
+2NO+O2>2NO2
+N2+O2>2NO|hf
+2KMnO4>K2MnO4+MnO2+O2
+2KClO3>2KCl+3O2
+2H2O2>2H2O+O2
+2H2O>2H2+O2
+CaCO3>CaO+CO2
+2NaHCO3>Na2CO3+H2O+CO2
+Cu2(OH)2CO3>2CuO+H2O+CO2
+Cu(OH)2>CuO+H2O
+2Fe(OH)3>Fe2O3+3H2O
+Mg(OH)2>MgO+H2O
+2Ag2O>4Ag+O2
+NH3.H2O>NH3+H2O
+CuCl2>Cu+Cl2
+2NaCl+2H2O>2NaOH+H2+Cl2
+2AgCl>2Ag+Cl2
+2AgBr>2Ag+Br2
+CH4+Cl2>CH3Cl+HCl`;
+const F={PP:'酚酞',PPr:'酚酞',Lit:'石蕊',LitR:'石蕊',LitB:'石蕊',St:'淀粉',StI:'淀粉'},SUB='₀₁₂₃₄₅₆₇₈₉';
+const fm=id=>F[id]||id.replace('.','·').replace(/([A-Za-z)])(\d+)/g,(m,a,b)=>a+[...b].map(d=>SUB[d]).join(''));
+const ELEM=/^[A-Z][a-z]?\d*$/;
+const CND={};
+`Fe S 加热
+CuO H2 加热
+CO CuO 加热
+C CuO 高温
+CO Fe2O3 高温
+C CO2 高温
+H2 N2 高温
+Cu O2 加热
+Ca O2 加热
+CO2 CaO 高温
+Cu CuO 高温
+Cl2 Fe 加热
+Cl2 Cu 加热
+KClO3 MnO2 加热
+CO2 Mg 点燃
+N2 O2 通电
+O2 Zn 加热
+O2 Si 加热
+Cr O2 加热
+C6H12O6 O2 点燃
+KMnO4 加热
+KClO3 加热
+H2O2 加热
+H2O 通电
+CaCO3 高温
+NaHCO3 加热
+Cu2(OH)2CO3 加热
+Cu(OH)2 加热
+Fe(OH)3 加热
+Mg(OH)2 加热
+Ag2O 加热
+NH3.H2O 加热
+CuCl2 通电
+H2O NaCl 通电
+AgCl 光照
+AgBr 光照
+CH4 Cl2 光照`.split('\n').forEach(l=>{const a=l.split(' '),c=a.pop();CND[a.sort().join('|')]=c});
+const RL=[],RM={};
+RULES.split('\n').forEach(l=>{
+  const[eq,fl='']=l.split('|'),[a,b]=eq.split('>');
+  const pt=s=>s.split('+').map(t=>{const m=t.match(/^(\d*)(.+)$/);return[+(m[1]||1),m[2]]});
+  const L=pt(a),Rr=pt(b);
+  if(![...L,...Rr].every(x=>SP[x[1]])||L.length>2)return;
+  const lid=L.map(x=>x[1]),cnd=CND[[...lid].sort().join('|')]||(fl.includes('f')&&lid.some(x=>x==='O2'||x==='Cl2')?'点燃':'');
+  const lq=L.some(x=>SP[x[1]].st==='l');
+  const txt=(n,id,arrow)=>(n>1?n:'')+fm(id)+arrow;
+  const eqs=L.map(x=>txt(x[0],x[1],'')).join(' + ')+(cnd?' —'+cnd+'→ ':' → ')+Rr.map(x=>{const s=SP[x[1]];let ar='';
+    if(!lid.includes(x[1])){if(s.st==='g')ar='↑';else if(s.st==='s'&&lq&&!ELEM.test(x[1]))ar='↓'}
+    return txt(x[0],x[1],ar)}).join(' + ');
+  const tags=[];
+  Rr.forEach(x=>{const s=SP[x[1]];if(lid.includes(x[1])||x[1]==='H2O')return;
+    if(s.st==='g')tags.push('产生'+s.cn+'气体');
+    else if(s.st==='s')tags.push(lq&&ELEM.test(x[1])?'析出'+s.cn:lq?'生成'+s.cn+'沉淀':'生成'+s.cn)});
+  if(L.some(x=>SP[x[1]].st==='s'&&!ELEM.test(x[1]))&&!Rr.some(x=>SP[x[1]].st==='s')&&lq)tags.push('固体溶解');
+  if(fl.includes('h'))tags.push('放热');
+  if(fl.includes('f'))tags.push('剧烈燃烧');
+  RM[[...lid].sort().join('|')]=RL.length;
+  RL.push({c:cnd,eq:eqs,L:lid,P:Rr,h:fl.includes('h'),f:fl.includes('f'),tags});
+});
+let found=new Set();
+try{found=new Set(JSON.parse(localStorage.getItem('chem-found2')||'[]'))}catch(e){}
+
+const st=$('#stage'),shelf=$('#shelf'),row=$('#row'),fxc=$('#fx'),fx=fxc.getContext('2d');
+let SW=0,SH=0;const dpr=Math.min(devicePixelRatio||1,2);
+new ResizeObserver(()=>{SW=st.clientWidth;SH=st.clientHeight;fxc.width=SW*dpr;fxc.height=SH*dpr;fx.setTransform(dpr,0,0,dpr,0,0)}).observe(st);
+const tc=h=>{const n=parseInt(h.slice(1),16);return((n>>16)*299+((n>>8)&255)*587+(n&255)*114)/1000>150?'#1b2a38':'#fff'};
+const MET=new Set('Fe Zn Cu Mg Al Na K Ca Ag Li Cr Ni Sn Pb Au Ba Ti Mn'.split(' ')),ACID=new Set('HCl H2SO4 HNO3 H3PO4 CH3COOH'.split(' ')),BASE=new Set('NaOH KOH LiOH Ca(OH)2 Ba(OH)2 NH3.H2O'.split(' ')),IND=new Set('PP PPr Lit LitR LitB St StI'.split(' ')),FLASK=new Set('C2H5OH C6H12O6 Br2 H2O2 C2H4Br2'.split(' ')),FIRE=new Set('H2 CH4 C2H2 C2H4 C3H8 CO H2S'.split(' ')),TOX=new Set('Cl2 NH3 SO2 H2S NO NO2 CO'.split(' ')),CRY=new Set('KMnO4 KClO3 CuSO4.5H2O NH4Cl (NH4)2SO4 NH4NO3 PbI2 I2'.split(' ')),PPT=new Set('AgCl AgBr AgI BaSO4 BaCO3 CuCO3 PbSO4 PbCl2 PbCrO4 CaSO4 ZnS CuS PbS Ag2S HgS FeS'.split(' '));
+function ic(id,s){
+  const c=s.col,k='fill="'+c+'" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"',n='fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"',o=n+' opacity=".45"';
+  const tk=(d,w)=>'<path d="'+d+'" fill="none" stroke="currentColor" stroke-width="'+(w+2.6)+'" stroke-linecap="round"/><path d="'+d+'" fill="none" stroke="'+c+'" stroke-width="'+w+'" stroke-linecap="round"/>';
+  if(s.st==='c'){
+    const fl='<path d="M20 3c6 6 5 11 0 15-5-4-6-9 0-15z" fill="#f08a45" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>';
+    if(id==='加热')return fl+'<rect x="17" y="20" width="6" height="5" fill="currentColor"/><path d="M12 37h16l3-11H9z" fill="#cfe3ea" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>';
+    if(id==='高温')return '<path d="M20 2c8 8 7 13 0 17-7-4-8-9 0-17z" fill="#4a90e8" stroke="currentColor" stroke-width="1.4"/><rect x="17" y="19" width="6" height="9" fill="#7a8794" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="28" width="22" height="8" rx="2" fill="#7a8794" stroke="currentColor" stroke-width="1.4"/>';
+    if(id==='点燃')return '<path d="M9 35L27 15" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M9 35L27 15" stroke="#e8c27a" stroke-width="3.4" stroke-linecap="round"/><circle cx="28" cy="14" r="5" fill="#c8201e" stroke="currentColor" stroke-width="1.5"/><path d="M33 3c4 4 3 7 0 9-3-2-4-5 0-9z" fill="#f08a45"/>';
+    if(id==='通电')return '<rect x="16" y="5" width="8" height="5" fill="currentColor"/><rect x="8" y="10" width="24" height="26" rx="3" fill="#f6c23a" stroke="currentColor" stroke-width="1.7"/><path d="M22 14l-6 10h5l-2 8 8-12h-5z" fill="#fff" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>';
+    return '<circle cx="20" cy="20" r="8" fill="#f6c23a" stroke="currentColor" stroke-width="1.7"/><path d="M20 4v4M20 32v4M4 20h4M32 20h4M9 9l3 3M28 28l3 3M31 9l-3 3M12 28l-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+  }
+  if(s.st==='g')return '<rect x="12" y="11" width="16" height="26" rx="6" '+k+'/><rect x="17" y="4" width="6" height="7" rx="1.5" fill="currentColor"/><path d="M12 23h16" '+n+'/><path d="M16 17q4-3 8 0" '+o+'/>'+(FIRE.has(id)?'<path d="M7 16c4-3 2-7 0-12-4 4-6 8 0 12z" fill="#f08a45"/>':'')+(TOX.has(id)?'<circle cx="33" cy="8" r="5" fill="#d33"/><path d="M33 5.5v3.5M33 10.6v.4" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>':'');
+  if(s.st==='l'){
+    if(id==='H2O')return '<path d="M20 3C14 13 8 19 8 26a12 12 0 0 0 24 0C32 19 26 13 20 3z" '+k+'/><path d="M14 27a6 6 0 0 0 5 5" '+o+'/>';
+    if(id==='Hg')return '<circle cx="13" cy="27" r="7" '+k+'/><circle cx="27" cy="29" r="5.5" '+k+'/><circle cx="22" cy="16" r="4.5" '+k+'/>';
+    if(FLASK.has(id))return '<path d="M16 4h8v10l10 19a2.5 2.5 0 0 1-2.2 3.6H8.2A2.5 2.5 0 0 1 6 33l10-19z" '+n+'/><path d="M11 25h18l5 8a2.5 2.5 0 0 1-2.2 3.6H8.2A2.5 2.5 0 0 1 6 33z" '+k+'/><path d="M14 4h12" '+n+'/>';
+    return (IND.has(id)?'<ellipse cx="20" cy="5" rx="3.5" ry="4" fill="currentColor"/>':'<rect x="15" y="3" width="10" height="6" rx="1.5" fill="currentColor"/>')+'<path d="M14.5 9h11v4l5.5 5.5V35a2.5 2.5 0 0 1-2.5 2.5h-17A2.5 2.5 0 0 1 9 35V18.5L14.5 13z" '+n+'/><path d="M9 23h22v12a2.5 2.5 0 0 1-2.5 2.5h-17A2.5 2.5 0 0 1 9 35z" '+k+'/>'+(ACID.has(id)?'<path d="M20 24l5 5-5 5-5-5z" fill="#fff" stroke="currentColor" stroke-width="1.2"/>':BASE.has(id)?'<rect x="14.5" y="25" width="11" height="8" rx="1" fill="#fff" stroke="currentColor" stroke-width="1.2"/>':'');
+  }
+  if(id==='Fe')return tk('M8 33L28 13',3.5)+'<rect x="23.5" y="8.5" width="13" height="5" rx="2" transform="rotate(45 30 11)" '+k+'/>';
+  if(id==='Cu')return tk('M5 26c2-12 7-12 8 0s5 12 8 0 5-12 8 0 5 12 6 0',3);
+  if(id==='Mg')return tk('M6 31c6-16 11 6 17-8s7-11 11-15',3);
+  if(id==='Zn')return '<circle cx="13" cy="28" r="6" '+k+'/><circle cx="26" cy="29" r="5" '+k+'/><circle cx="20" cy="17" r="5.5" '+k+'/>';
+  if(id==='Al')return '<path d="M8 12l20-4 6 20-20 6z" '+k+'/><path d="M12 17l15-3M14 24l15-3" '+o+'/>';
+  if('Na K Li Ca Ba'.split(' ').includes(id))return '<path d="M7 14l13-7 13 7v14l-13 7-13-7z" '+k+'/><path d="M7 14l13 7 13-7M20 21v14" '+o+'/>';
+  if(MET.has(id))return '<path d="M4 31l6-14h20l6 14z" '+k+'/><path d="M12 22h16" '+o+'/>';
+  if('C S P Si'.split(' ').includes(id))return '<path d="M6 29l3-12 10-8 12 6 4 12-8 8H13z" '+k+'/><path d="M9 17l10 4 12-6M19 21v14" '+o+'/>';
+  if(CRY.has(id))return '<path d="M20 4l13 13-13 19L7 17z" '+k+'/><path d="M7 17h26M13 17l7 19 7-19-7-13" '+o+'/>';
+  if(PPT.has(id)||id.includes('(OH)'))return '<circle cx="13" cy="27" r="8" '+k+'/><circle cx="27" cy="26" r="9" '+k+'/><circle cx="20" cy="17" r="8" '+k+'/>';
+  return '<path d="M3 35c7-2 9-13 17-23 8 10 10 21 17 23z" '+k+'/><circle cx="14" cy="31" r="1.3" fill="currentColor"/><circle cx="25" cy="29" r="1.3" fill="currentColor"/><circle cx="20" cy="22" r="1.3" fill="currentColor"/>';
+}
+function el(id){const s=SP[id],d=document.createElement('div'),f=fm(id);d.className='tok st-'+s.st;d.innerHTML='<svg class="ic" viewBox="0 0 40 40" aria-hidden="true">'+ic(id,s)+'</svg><span style="font-size:'+(f.length>9?8:f.length>6?10:12)+'px">'+f+'</span><small>'+(F[id]===s.cn?'试液':s.cn)+'</small>';d._id=id;return d}
+function spawn(id,x,y){
+  const hint=$('#hint');if(hint)hint.remove();
+  x=Math.max(0,Math.min(SW-60,x));y=Math.max(0,Math.min(SH-60,y));
+  const all=st.querySelectorAll('.tok');if(all.length>=36)all[0].remove();
+  const d=el(id);d.style.left=x+'px';d.style.top=y+'px';d._y=y;d._ttl=1100;st.append(d);
+  d.onpointerdown=e=>{e.preventDefault();const r=d.getBoundingClientRect();begin(d,e,e.clientX-r.left,e.clientY-r.top)};
+  return d;
+}
+let cur=null;
+function near(d){let best=null,bd=58;st.querySelectorAll('.tok').forEach(o=>{if(o===d)return;const dist=Math.hypot(o.offsetLeft-d.offsetLeft,o.offsetTop-d._y);if(dist<bd){bd=dist;best=o}});return best}
+function begin(d,e,ox,oy){
+  d.classList.add('drag');
+  const mv=ev=>{const r=st.getBoundingClientRect(),x=ev.clientX-r.left-ox,y=ev.clientY-r.top-oy;
+    d.style.left=x+'px';d.style.top=y+'px';d._y=y;
+    const h=near(d);if(h!==cur){cur&&cur.classList.remove('hit');cur=h;h&&h.classList.add('hit')}
+    shelf.classList.toggle('del',ev.clientY>shelf.getBoundingClientRect().top)};
+  const up=ev=>{
+    removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);
+    d.classList.remove('drag');shelf.classList.remove('del');
+    const over=ev.clientY>shelf.getBoundingClientRect().top,h=cur;cur&&cur.classList.remove('hit');cur=null;
+    if(over){d.remove();return}
+    const x=Math.max(0,Math.min(SW-60,d.offsetLeft)),y=Math.max(0,Math.min(SH-60,d._y));
+    d.style.left=x+'px';d.style.top=y+'px';d._y=y;
+    if(h){if(d.classList.contains('st-c'))cond(d,h);else if(h.classList.contains('st-c'))cond(h,d);else react(d,h)}};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up);
+}
+// 特效
+const PT=[];
+const pp=(k,x,y,vx,vy,r,c,d)=>PT.push({k,x,y,vx,vy,r,c,l:1,d});
+function draw(){
+  fx.clearRect(0,0,SW,SH);
+  for(let i=PT.length-1;i>=0;i--){const p=PT[i];p.l-=p.d;if(p.l<=0){PT.splice(i,1);continue}
+    p.x+=p.vx;p.y+=p.vy;fx.globalAlpha=p.l;
+    if(p.k==='b'){p.x+=Math.sin(p.y/9)*.5;fx.strokeStyle='#4f86ad';fx.lineWidth=1.5;fx.beginPath();fx.arc(p.x,p.y,p.r,0,7);fx.stroke()}
+    else if(p.k==='r'){p.r+=3.2;fx.strokeStyle=p.c;fx.lineWidth=5;fx.beginPath();fx.arc(p.x,p.y,p.r,0,7);fx.stroke()}
+    else if(p.k==='g'){const g=fx.createRadialGradient(p.x,p.y,2,p.x,p.y,p.r);g.addColorStop(0,'rgba(255,150,50,.8)');g.addColorStop(1,'rgba(255,150,50,0)');fx.fillStyle=g;fx.fillRect(p.x-p.r,p.y-p.r,p.r*2,p.r*2)}
+    else{fx.fillStyle=p.c;fx.beginPath();fx.arc(p.x,p.y,p.r,0,7);fx.fill()}}
+  fx.globalAlpha=1;
+  st.querySelectorAll('.tok.st-g:not(.drag)').forEach(t=>{t._y-=.25;t._ttl--;t.style.top=t._y+'px';t.style.opacity=Math.min(.85,t._ttl/200);if(t._ttl<=0||t._y<-60)t.remove()});
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+let bt;
+function cond(c,t){
+  if(t.classList.contains('st-c')){c.remove();return}
+  const k=c._id,tid=t._id;let hit=null;
+  if(RM[tid]!=null&&RL[RM[tid]].c===k)hit=[t,t];
+  else st.querySelectorAll('.tok:not(.st-c)').forEach(o=>{if(hit||o===t)return;
+    if(Math.hypot(o.offsetLeft-t.offsetLeft,o._y-t._y)>110)return;
+    const j=RM[[tid,o._id].sort().join('|')];if(j!=null&&RL[j].c===k)hit=[t,o]});
+  const x=t.offsetLeft+30,y=t._y+30;
+  if(k==='通电')for(let i=0;i<16;i++)pp('p',x+(Math.random()-.5)*60,y+(Math.random()-.5)*50,(Math.random()-.5)*3,(Math.random()-.5)*3,2.5,'#6ab4ff',.04);
+  else if(k==='光照')pp('g',x,y,0,0,130,'',.012);
+  else for(let i=0;i<16;i++)pp('p',x+(Math.random()-.5)*40,y+22,(Math.random()-.5)*.8,-(1+Math.random()*2),4+Math.random()*5,Math.random()<.5?'#ffb43c':'#e8641e',.03);
+  c.remove();
+  if(hit)setTimeout(()=>{if(hit[0].isConnected&&hit[1].isConnected)react(hit[0],hit[1],k)},500);
+  else say('<b>'+SP[k].cn+'</b>作用在 '+fm(tid)+' 上，没有发生变化');
+}
+function say(h){const b=$('#banner');b.innerHTML=h;b.classList.add('on');clearTimeout(bt);bt=setTimeout(()=>b.classList.remove('on'),9000)}
+function react(a,b,cnd){
+  const i=RM[a===b?a._id:[a._id,b._id].sort().join('|')],r0=RL[i];
+  if(r0&&r0.c&&r0.c!==cnd){say('<b>'+fm(a._id)+(a===b?'':' + '+fm(b._id))+'</b> 需要条件：<em>'+r0.c+'</em><br>已为你切到“条件”，把 '+SP[r0.c].cn+' 拖到它们身上。');tab='c';q='';$('#q').value='';shelfUI();return}
+  const cx=(a.offsetLeft+b.offsetLeft)/2+30,cy=(a._y+b._y)/2+30;
+  if(i==null){
+    const dx=a.offsetLeft-b.offsetLeft||1,dy=a._y-b._y,n=Math.hypot(dx,dy)||1;
+    a.style.left=Math.max(0,Math.min(SW-60,a.offsetLeft+dx/n*75))+'px';a._y=Math.max(0,Math.min(SH-60,a._y+dy/n*75));a.style.top=a._y+'px';
+    a.classList.add('nope');setTimeout(()=>a.classList.remove('nope'),400);
+    say('<b>'+fm(a._id)+' 和 '+fm(b._id)+'：</b>没有明显反应');return}
+  const r=RL[i];a.remove();b.remove();
+  const out=r.P.filter(x=>r.P.length===1||x[1]!=='H2O');
+  out.forEach((x,k)=>{const ang=k*6.283/out.length+Math.random(),rad=out.length>1?42:0;spawn(x[1],cx-30+Math.cos(ang)*rad,cy-30+Math.sin(ang)*rad)});
+  const first=SP[r.P[0][1]];
+  pp('r',cx,cy,0,0,10,first.col,.025);
+  r.P.forEach(x=>{const s=SP[x[1]];
+    if(s.st==='g'&&!r.L.includes(x[1]))for(let k=0;k<22;k++)pp('b',cx+(Math.random()-.5)*70,cy+Math.random()*20,0,-(1+Math.random()*1.8),2+Math.random()*4,'',.012);
+    if(s.st==='s'&&!r.L.includes(x[1]))for(let k=0;k<26;k++)pp('p',cx+(Math.random()-.5)*60,cy-10+Math.random()*20,0,.8+Math.random()*1.2,1.5+Math.random()*2.5,s.col,.012)});
+  if(r.h){pp('g',cx,cy,0,0,110,'',.012);for(let k=0;k<8;k++)pp('p',cx+(Math.random()-.5)*50,cy,0,-.7,7,'rgba(190,200,205,.6)',.012)}
+  if(r.f){for(let k=0;k<30;k++)pp('p',cx+(Math.random()-.5)*60,cy,(Math.random()-.5)*2,-(1.5+Math.random()*2.5),5+Math.random()*7,Math.random()<.5?'#ffb43c':'#e8641e',.03);st.classList.remove('shake');void st.offsetWidth;st.classList.add('shake')}
+  const isNew=!found.has(i);found.add(i);
+  try{localStorage.setItem('chem-found2',JSON.stringify([...found]))}catch(e){}
+  say((isNew?'<b>新发现！</b> ':'')+'<div class="eq">'+r.eq+'</div><em>'+r.tags.join(' · ')+'</em>');
+  prog();
+}
+// 试剂架
+let tab='s',q='';const TN={s:'固体',l:'液体',g:'气体',c:'条件'};
+function shelfUI(){
+  $('#tabs').innerHTML=['s','l','g','c'].map(k=>'<button data-k="'+k+'" class="'+(!q&&k===tab?'on':'')+'">'+TN[k]+' '+Object.values(SP).filter(s=>s.st===k).length+'</button>').join('');
+  row.innerHTML='';row.scrollLeft=0;
+  Object.keys(SP).filter(id=>q?(id+SP[id].cn+fm(id)).toLowerCase().includes(q):SP[id].st===tab).forEach(id=>{
+    const m=el(id);m.classList.add('mini');row.append(m);
+    m.onpointerdown=e=>{
+      const sx=e.clientX,sy=e.clientY;let done=0;
+      const cl=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',upp);removeEventListener('pointercancel',cl)};
+      const mv=ev=>{if(done)return;const dx=ev.clientX-sx,dy=ev.clientY-sy;
+        if(ev.pointerType==='mouse'?Math.hypot(dx,dy)>6:(dy<-10&&-dy>Math.abs(dx))){
+          done=1;cl();const r=st.getBoundingClientRect();
+          const t=spawn(id,ev.clientX-r.left-30,ev.clientY-r.top-30);begin(t,ev,30,30)}};
+      const upp=()=>{cl();if(!done){const t=spawn(id,40+Math.random()*(SW-140),60+Math.random()*(SH-160));t.style.transform='scale(1.15)';setTimeout(()=>t.style.transform='',160)}};
+      addEventListener('pointermove',mv);addEventListener('pointerup',upp);addEventListener('pointercancel',cl);
+    };
+  });
+}
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b){tab=b.dataset.k;q='';$('#q').value='';shelfUI()}};
+$('#q').oninput=e=>{q=e.target.value.trim().toLowerCase().replace(/\s+/g,'');shelfUI();if(!row.children.length)row.innerHTML='<div class="none">没有找到“'+e.target.value.trim()+'”</div>'};
+function prog(){$('#prog').textContent='已发现 '+found.size+' / '+RL.length+' 种反应 · '+Object.values(SP).filter(s=>s.st!=='c').length+' 种物质'}
+$('#clr').onclick=()=>{st.querySelectorAll('.tok').forEach(t=>t.remove());PT.length=0;$('#banner').classList.remove('on')};
+$('#dex').onclick=()=>{
+  $('#dh').textContent='反应图鉴 '+found.size+' / '+RL.length;
+  $('#dl').innerHTML=[...found].sort((a,b)=>a-b).map(i=>'<p>'+RL[i].eq+'</p>').join('')||'<p>还没有发现，去试试吧。</p>';
+  $('#dexp').hidden=false};
+$('#dc').onclick=()=>$('#dexp').hidden=true;
+shelfUI();prog();
+</script>
+</body>
+</html>
